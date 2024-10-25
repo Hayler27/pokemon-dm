@@ -1,46 +1,20 @@
-import { LitElement, html } from 'lit-element';
-import { getComponentSharedStyles } from '@bbva-web-components/bbva-core-lit-helpers';
-import styles from './pokemon-dm.css.js';
-
-/**
- * ![LitElement component](https://img.shields.io/badge/litElement-component-blue.svg)
- *
- * This component ...
- *
- * Example:
- *
- * ```html
- *   <pokemon-dm></pokemon-dm>
- * ```
- */
+import { LitElement } from 'lit-element';
 export class PokemonDm extends LitElement {
-  static get properties() {
-    return {
-      /**
-       * Description for property
-       */
-      name: {
-        type: String,
-      },
-    };
-  }
+  async fetchPokemons() {
+    const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=100');
+    const data = await response.json();
 
-  constructor() {
-    super();
-    this.name = 'Cells';
-  }
+    const pokemonDetails = await Promise.all(
+      data.results.map(pokemon => fetch(pokemon.url).then(res => res.json()))
+    );
 
-  static get styles() {
-    return [
-      styles,
-      getComponentSharedStyles('pokemon-dm-shared-styles'),
-    ];
-  }
+    const filteredPokemons = pokemonDetails.filter(pokemon => !pokemon.evolves_from_species).map(pokemon => ({
+      name: pokemon.name,
+      image: pokemon.sprites.front_default,
+      abilities: pokemon.abilities.map(ability => ability.ability.name).join(', '),
+    }));
 
-  render() {
-    return html`
-      <p>Welcome to ${this.name}</p>
-      <slot></slot>
-    `;
+    console.log('Filtered Pokémon:', filteredPokemons); 
+    return filteredPokemons;
   }
 }
